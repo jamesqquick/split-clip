@@ -1,0 +1,11 @@
+{
+  "id": "mig_ckfh587od9uchghlu9ng",
+  "checksum": "1:c0a6b82561372cad00ad74800268e34d3996053ef52e93333adb0b4d8e0fc614",
+  "operations": [
+    {
+      "addTable": {
+        "table": "video"
+      }
+    }
+  ]
+}

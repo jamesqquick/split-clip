@@ -3,10 +3,9 @@ import VideoEditor from './components/VideoEditor';
 
 export default function Home() {
   return (
-    <>
-      <h1>Split Clip</h1>
-      <VideoForm />
+    <main className="min-h-screen max-w-7xl mx-auto p-20">
+      {/* <VideoForm /> */}
       <VideoEditor />
-    </>
+    </main>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 import React, {
   Fragment,
+  MouseEventHandler,
   useCallback,
   useEffect,
   useRef,
@@ -8,17 +9,21 @@ import React, {
 } from 'react';
 
 interface Marker {
-  in: number;
-  out: number;
+  start: number;
+  end: number;
 }
 
 export default function VideoEditor() {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaystartg] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+  const [timer, setTimer] = useState<undefined | NodeJS.Timeout>(undefined);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [markers, setMarkers] = useState<Marker[]>([]);
-  const [currentIn, setCurrentIn] = useState<number | undefined>(undefined);
+  const [currentStart, setCurrentStart] = useState<number | undefined>(
+    undefined
+  );
 
-  //in/out object pairs
+  //start/end object pairs
   const [currentTimeWidthPercent, setCurrentTimeWidthPercent] =
     useState<number>(0);
 
@@ -26,23 +31,23 @@ export default function VideoEditor() {
     (event: KeyboardEvent) => {
       if (event.key === 'i') {
         const currentTime = videoRef.current?.currentTime;
-        setCurrentIn(currentTime);
+        setCurrentStart(currentTime);
       } else if (event.key === 'o') {
-        //check for previous in marker and make sure out point is later than in point
+        //check for previous start marker and make sure end postartt is later than start postartt
         const currentTime = videoRef.current?.currentTime;
         if (!currentTime) {
           return;
-        } else if (!currentIn) {
-          console.log("can't create out point before an in point");
-        } else if (currentTime <= currentIn) {
-          console.log("can't create out point before the in point");
+        } else if (!currentStart) {
+          console.log("can't create end postartt before an start postartt");
+        } else if (currentTime <= currentStart) {
+          console.log("can't create end postartt before the start postartt");
         } else {
           const marker = {
-            in: currentIn,
-            out: currentTime,
+            start: currentStart,
+            end: currentTime,
           };
           setMarkers([...markers, marker]);
-          setCurrentIn(undefined);
+          setCurrentStart(undefined);
         }
       } else if (videoRef?.current) {
         if (event.key === '=') {
@@ -59,37 +64,36 @@ export default function VideoEditor() {
           videoRef.current.muted = true;
           if (isPlaying) {
             videoRef.current?.pause();
-            setIsPlaying(false);
+            setIsPlaystartg(false);
           } else {
             videoRef.current?.play();
-            setIsPlaying(true);
+            setIsPlaystartg(true);
           }
         }
       }
     },
-    [markers, isPlaying, currentIn, videoRef]
+    [markers, isPlaying, currentStart, videoRef]
   );
 
-  const handleTimeUpdate = () => {
-    if (videoRef?.current) {
-      const percent =
-        (videoRef.current.currentTime / videoRef.current.duration) * 100;
-      setCurrentTimeWidthPercent(percent);
-    }
-  };
+  //   const handleTimeUpdate = () => {
+  //     if (videoRef?.current) {
+  //       const percent =
+  //         (videoRef.current.currentTime / videoRef.current.duration) * 100;
+  //       setCurrentTimeWidthPercent(percent);
+  //     }
+  //   };
 
-  const handleSeekBarClick = (event: React.MouseEvent<HTMLElement>) => {
-    if (!videoRef.current) {
-      return;
-    }
-    const clickX = event.clientX;
-    const seekBarStart = event.currentTarget.getBoundingClientRect().x;
-    const seekBarWidth = event.currentTarget.getBoundingClientRect().width;
-    const newMarkerX = clickX - seekBarStart;
-    console.log(newMarkerX);
-    videoRef.current.currentTime =
-      videoRef.current.duration * (newMarkerX / seekBarWidth);
-  };
+  //   const handleSeekBarClick = (event: React.MouseEvent<HTMLElement>) => {
+  //     if (!videoRef.current) {
+  //       return;
+  //     }
+  //     const clickX = event.clientX;
+  //     const seekBarStart = event.currentTarget.getBoundingClientRect().x;
+  //     const seekBarWidth = event.currentTarget.getBoundingClientRect().width;
+  //     const newMarkerX = clickX - seekBarStart;
+  //     videoRef.current.currentTime =
+  //       videoRef.current.duration * (newMarkerX / seekBarWidth);
+  //   };
 
   useEffect(() => {
     document.addEventListener('keypress', keyPressHandler);
@@ -97,61 +101,102 @@ export default function VideoEditor() {
       document.removeEventListener('keypress', keyPressHandler);
     };
   }, [keyPressHandler]);
+
+  const onSubmitHandler: React.MouseEventHandler<HTMLButtonElement> = (
+    event
+  ) => {
+    const formattedMarkers = markers.map((marker) => {
+      return {
+        start: Math.floor(marker.start) * 1000,
+        end: Math.ceil(marker.end) * 1000,
+      };
+    });
+    fetch('http://localhost:3030/api/video/split', {
+      method: 'POST',
+      body: JSON.stringify({ markers: formattedMarkers }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  };
+
+  const handleVideoMouseEnter = (
+    event: React.MouseEvent<HTMLVideoElement, MouseEvent>
+  ) => {
+    console.log(event.currentTarget.src);
+    setShowControls(true);
+    clearInterval(timer);
+  };
+
+  const handleVideoMouseLeave = (
+    event: React.MouseEvent<HTMLVideoElement, MouseEvent>
+  ) => {
+    console.log(event);
+    setTimer(
+      setTimeout(() => {
+        setShowControls(false);
+      }, 3000)
+    );
+  };
+
   return (
-    <div className="relative max-w-6xl mx-auto">
-      <video
-        controls
-        ref={videoRef}
-        className=" max-h-[600px] aspect-video w-full"
-        onTimeUpdate={handleTimeUpdate}
-      >
-        <source
-          id="video-source"
-          src="https://us-east-1.storage.xata.sh/6bpi1tjjlh0sh41lpk563a56bk"
-        />
-        Your browser does not support the video tag.
-      </video>
-      <div className="absolute bottom-0 w-full px-[10px] py-2">
-        <div
-          id="seek-bar"
-          className="bg-gray-400 h-2 w-full rounded-full"
-          onClick={handleSeekBarClick}
+    <Fragment>
+      <div className="relative max-w-6xl mx-auto mb-10">
+        <video
+          controls={showControls}
+          ref={videoRef}
+          className=" max-h-[600px] aspect-video w-full rounded-xl border-gray-200 border-2 mb-4"
+          onMouseEnter={handleVideoMouseEnter}
+          onMouseLeave={handleVideoMouseLeave}
+          muted
         >
-          <div
-            id="currentTime"
-            className={`bg-gray-200 h-2 rounded-full`}
-            style={{
-              width: `${currentTimeWidthPercent}%`,
-            }}
-          ></div>
-        </div>
-        <div id="markers">
-          {currentIn && (
-            <div
-              className={`h-[12px] w-[12px] bg-green-500 absolute bottom-[6px] rounded-full`}
-              style={{
-                left: `${(currentIn / videoRef?.current?.duration) * 100}%`,
-              }}
-            ></div>
-          )}
-          {markers.map((marker, i) => (
-            <Fragment key={i}>
+          <source
+            id="video-source"
+            src="https://us-east-1.storage.xata.sh/gn42cjqjt106f0jcfldtesb8hc"
+          />
+          Your browser does not support the video tag.
+        </video>
+        <div className=" w-full px-[10px] py-2 bg-gray-200 h-[40px] rounded-md">
+          <div>
+            {currentStart && (
               <div
-                className={`h-[12px] w-[12px] bg-green-500 absolute bottom-[6px] rounded-full`}
+                className={`h-[50px] w-[6px] bg-purple-500 absolute bottom-[-5px] rounded-md`}
                 style={{
-                  left: `${(marker.in / videoRef?.current?.duration) * 100}%`,
+                  left: `${
+                    (currentStart / videoRef?.current?.duration) * 100
+                  }%`,
                 }}
               ></div>
-              <div
-                className={`h-[12px] w-[12px] bg-red-500 absolute bottom-[6px] rounded-full`}
-                style={{
-                  left: `${(marker.out / videoRef?.current?.duration) * 100}%`,
-                }}
-              ></div>
-            </Fragment>
-          ))}
+            )}
+            {markers.map((marker, i) => (
+              <Fragment key={i}>
+                <div
+                  className={`h-[50px] rounded-lg w-[60px] bg-purple-300 border-2 border-purple-700 opacity-75 absolute bottom-[-5px] `}
+                  style={{
+                    left: `${
+                      (marker.start / videoRef?.current?.duration) * 100
+                    }%`,
+                    width: `${
+                      ((marker.end - marker.start) /
+                        videoRef?.current?.duration) *
+                      videoRef?.current?.getBoundingClientRect().width
+                    }px`,
+                  }}
+                >
+                  <div className="rounded-l-lg absolute w-2 -left-2 bg-purple-700 top-[4px] bottom-[4px]"></div>
+                  <div className="rounded-r-lg absolute w-2 -right-2 bg-purple-700 top-[4px] bottom-[4px]"></div>
+                </div>
+              </Fragment>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+      <button
+        className="bg-blue-500 px-4 py-2 rounded-md"
+        onClick={onSubmitHandler}
+      >
+        Submit
+      </button>
+    </Fragment>
   );
 }

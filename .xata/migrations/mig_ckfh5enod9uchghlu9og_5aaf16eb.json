@@ -1,0 +1,16 @@
+{
+  "id": "mig_ckfh5enod9uchghlu9og",
+  "parentID": "mig_ckfh587od9uchghlu9ng",
+  "checksum": "1:5aaf16eb064bdfdc8744405d29e0cd540bd1ae0e93a1cf930f7d02af855d1513",
+  "operations": [
+    {
+      "addColumn": {
+        "column": {
+          "name": "video",
+          "type": "file"
+        },
+        "table": "video"
+      }
+    }
+  ]
+}
