@@ -1,11 +1,11 @@
-import VideoForm from './components/VideoForm';
+import VideoForm from './dashboard/folders/[slug]/upload/VideoForm';
 import VideoEditor from './components/VideoEditor';
+import Hero from './components/Hero';
 
 export default function Home() {
   return (
-    <main className="min-h-screen max-w-7xl mx-auto p-20">
-      {/* <VideoForm /> */}
-      <VideoEditor />
+    <main className="min-h-screen">
+      <Hero />
     </main>
   );
 }

@@ -3,7 +3,7 @@ import FolderLink from './FolderLink';
 import { redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs';
 
-export default async function FolderList() {
+export default async function RecentFolders() {
   const xataClient = getXataClient();
   const { userId } = auth();
   if (!userId) {
@@ -13,8 +13,10 @@ export default async function FolderList() {
     .filter({
       userId,
     })
-    .sort('xata.createdAt', 'desc')
-    .getMany();
+    .sort('xata.updatedAt', 'desc')
+    .getMany({
+      pagination: { size: 4 },
+    });
   return (
     <div>
       {folders.length === 0 && <p>Create a folder to get started.</p>}

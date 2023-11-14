@@ -1,4 +1,5 @@
 'use client';
+import { Video, getXataClient } from '@/xata';
 import React, {
   Fragment,
   MouseEventHandler,
@@ -13,7 +14,7 @@ interface Marker {
   end: number;
 }
 
-export default function VideoEditor() {
+export default function VideoEditor({ src }: { src: string }) {
   const [isPlaying, setIsPlaystartg] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [timer, setTimer] = useState<undefined | NodeJS.Timeout>(undefined);
@@ -141,7 +142,7 @@ export default function VideoEditor() {
 
   return (
     <Fragment>
-      <div className="relative max-w-6xl mx-auto mb-10">
+      <div className="relative mb-10">
         <video
           controls={showControls}
           ref={videoRef}
@@ -150,10 +151,7 @@ export default function VideoEditor() {
           onMouseLeave={handleVideoMouseLeave}
           muted
         >
-          <source
-            id="video-source"
-            src="https://us-east-1.storage.xata.sh/gn42cjqjt106f0jcfldtesb8hc"
-          />
+          <source id="video-source" src={src} />
           Your browser does not support the video tag.
         </video>
         <div className=" w-full px-[10px] py-2 bg-gray-200 h-[40px] rounded-md">
